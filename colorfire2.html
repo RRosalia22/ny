@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mensaje Especial ✨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #141e30, #243b55);
+  overflow: hidden;
+}
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+}
+
+.card {
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3);
+  background: rgba(255,255,255,0.95);
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<canvas id="fireworks"></canvas>
+
+<div class="container px-3 content">
+  <div class="row justify-content-center align-items-center min-vh-100">
+    <div class="col-12 col-sm-10 col-md-6">
+
+      <!-- LOGIN -->
+      <div class="card p-4 text-center fade-in" id="login">
+        <h4 class="mb-3">🎆 Bienvenido 🎆</h4>
+        <input type="text" id="name" class="form-control mb-3" placeholder="Tu nombre">
+        <input type="password" id="pin" class="form-control mb-3" placeholder="PIN">
+        <button class="btn btn-warning w-100 fw-bold" onclick="checkPin()">Entrar</button>
+        <div class="text-danger mt-3" id="error"></div>
+      </div>
+
+      <!-- MENSAJE -->
+      <div class="card p-4 text-center fade-in d-none" id="message">
+        <h4 id="greeting" class="mb-3"></h4>
+        <p>. ݁₊ ⊹ . ݁ ⟡ ݁ . ⊹ ₊ ݁.</p>
+        <p>Si te llego este mensaje es porque Rose/Rosa quiere agradecerte por el apoyo que le diste durante todo el año 2025 ✨</p>
+        <p>Ella tuvo un año realmente agitado,en muchas ocaciones fue el meme de "el año esta acabando conmigo" sin embargo esta aqui</p>
+        <p>Gracias a ti se sintió acompañada, escuchada y, sobre todo, apreciada.</p>
+        <p>Se encuentra enormemente agradecida por todo lo que hiciste, aunque quizás para ti haya sido algo pequeño (un mensaje, un meme, una charla corta, un tiktok), para ella fue un apoyo que hizo los días más llevaderos.</p>
+        <p>Ella espera que este año nuevo tengas muchos exitos, mucha salud, y sobre todo felicidad y paz.</p>
+        <p>. ݁₊ ⊹ . ݁ ⟡ ݁ . ⊹ ₊ ݁.</p>
+        <p class="fw-bold mt-3">🎉 Feliz Año Nuevo 2026🎉</p>
+        <p class="fw-bold">- Con amor Rose </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const PIN_CORRECTO = "2025";
+
+function checkPin() {
+  const name = document.getElementById("name").value.trim();
+  const pin = document.getElementById("pin").value;
+  const error = document.getElementById("error");
+  error.textContent = "";
+
+  if (!name) { error.textContent = "Ingresa tu nombre ✍️"; return; }
+  if (pin !== PIN_CORRECTO) { error.textContent = "PIN incorrecto ❌"; return; }
+
+  document.getElementById("login").classList.add("d-none");
+  document.getElementById("message").classList.remove("d-none");
+  document.getElementById("greeting").textContent = `Hola ${name} 💫`;
+
+  startFireworks();
+}
+
+/* 🎆 Fuegos artificiales 🎆 */
+const canvas = document.getElementById("fireworks");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+let fireworks = [];
+let particles = [];
+let animationStarted = false;
+const gravity = 0.04;
+const friction = 0.98;
+
+const COLORS = [
+  "rgba(255,215,0,0.9)", "rgba(255,255,255,0.9)", "rgba(255,99,71,0.9)",
+  "rgba(255,165,0,0.9)", "rgba(173,216,230,0.9)", "rgba(144,238,144,0.9)",
+  "rgba(186,85,211,0.9)", "rgba(255,192,203,0.9)"
+];
+
+// Fuegos que suben desde abajo
+class Firework {
+  constructor(x = Math.random() * canvas.width, y = canvas.height) {
+    this.x = x;
+    this.y = y;
+    this.targetY = Math.random() * canvas.height * 0.4 + canvas.height * 0.1;
+    this.speed = - (6 + Math.random() * 2);
+    this.exploded = false;
+    this.trail = [];
+  }
+
+  update() {
+    this.trail.push({x:this.x, y:this.y});
+    if (this.trail.length > 8) this.trail.shift();
+
+    this.y += this.speed;
+    this.speed += gravity;
+
+    if (!this.exploded && (this.y <= this.targetY || this.speed > 0)) {
+      this.exploded = true;
+      explode(this.x, this.y);
+    }
+  }
+
+  draw() {
+    ctx.strokeStyle = "rgba(255,215,0,0.6)";
+    ctx.beginPath();
+    this.trail.forEach((p,i)=>{ i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y)});
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,215,0,0.9)";
+    ctx.beginPath(); ctx.arc(this.x,this.y,2,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// Partículas de explosión
+class Particle {
+  constructor(x, y, angle, speed, color) {
+    this.x = x;
+    this.y = y;
+    this.vx = Math.cos(angle)*speed;
+    this.vy = Math.sin(angle)*speed;
+    this.alpha = 1;
+    this.color = color;
+    this.radius = Math.random()*2+1;
+  }
+
+  update() {
+    this.vx *= friction;
+    this.vy *= friction;
+    this.vy += gravity;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.alpha -= 0.015;
+  }
+
+  draw() {
+    ctx.fillStyle = this.color.replace("0.9", this.alpha.toFixed(2));
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// Explosión directa
+function explode(x, y) {
+  const count = 70;
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  for (let i=0; i<count; i++){
+    const angle = (Math.PI*2/count)*i;
+    const speed = Math.random()*4+2;
+    particles.push(new Particle(x,y,angle,speed,color));
+  }
+}
+
+function animate() {
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  fireworks = fireworks.filter(fw=>!fw.exploded);
+  particles = particles.filter(p=>p.alpha>0);
+
+  fireworks.forEach(fw=>{ fw.update(); fw.draw(); });
+  particles.forEach(p=>{ p.update(); p.draw(); });
+
+  requestAnimationFrame(animate);
+}
+
+function startFireworks() {
+  if (animationStarted) return;
+  animationStarted = true;
+  setInterval(()=>{ fireworks.push(new Firework()); }, 1200);
+  animate();
+}
+
+// CLICK / TAP: solo explosión
+document.addEventListener("click", (e)=>{
+  if(!document.getElementById("message").classList.contains("d-none")){
+    explode(e.clientX, e.clientY);
+  }
+});
+</script>
+</body>
+</html>
